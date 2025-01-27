@@ -1,0 +1,62 @@
+tasks:
+
+  install:
+      usage: running basic install setup
+      run: cd ./api && tusk node 'npm install' && tusk setup 
+
+  setup:
+    usage: access app container and execute commands
+    run: tusk up && tusk node 'npm run dev'
+
+  webserver:
+    usage: access webserver container
+    run: docker compose exec webserver bash
+
+  database:
+    usage: access database container
+    run: docker compose exec database bash
+
+  node:
+    usage: access app container and execute commands
+    args:
+      command:
+        usage: the command that app will run
+    run: docker compose exec node ${command}
+
+  webserver-logs:
+    usage: access webserver container logs
+    run: docker compose logs webserver
+
+  database-logs:
+    usage: access database container logs
+    run: docker compose logs database
+
+  start:
+    usage: start project containers
+    run: docker compose start
+
+  stop:
+    usage: stop project containers
+    run: docker compose stop
+
+  restart:
+    usage: restart project containers
+    run: docker compose restart
+
+  up:
+    usage: create project containers and start then
+    run: docker compose up -d
+
+  down:
+    usage: stop and delete project containers
+    options:
+      v:
+        usage: remove docker volumes
+        type: bool
+    run:
+      - when:
+          equal: {v: true}
+        command: docker compose down -v
+      - when:
+          equal: {v: false}
+        command: docker compose down
