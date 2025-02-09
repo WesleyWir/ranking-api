@@ -2,59 +2,49 @@ import { Delete, Injectable, Logger } from '@nestjs/common';
 import { CreatePlayerDto } from './dtos/create-player.dto';
 import { Player } from './interfaces/player.interface';
 import { v4 as uuid } from 'uuid';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class PlayersService {
-    private players: Player[] = [];
-
     private readonly logger = new Logger(PlayersService.name)
 
-    async createUpdatePlayer(createPlayerPayload: CreatePlayerDto): Promise<void> {
-        const { email } = createPlayerPayload;
-        const existingPlayer = this.players.find(player => player.email === email);
+    constructor(@InjectModel('Player') private playerModel: Model<Player>) { }
+
+    async createUpdatePlayer(payload: CreatePlayerDto): Promise<Player> {
+        const { email } = payload;
+        const existingPlayer = await this.playerModel.findOne({ email }).exec();
         if (existingPlayer) {
-            this.update(existingPlayer, createPlayerPayload);
+            return this.update(payload);
         }
-        this.create(createPlayerPayload);
+        return this.create(payload);
     }
 
     async getAllPlayers(): Promise<Player[]> {
-        return this.players;
+        return await this.playerModel.find().exec();
     }
 
     async findPlayerByEmail(email: string): Promise<Player> {
-        const player = this.players.find(player => player.email === email);
+        const player = await this.playerModel.findOne({ email }).exec();
         if (!player) {
             throw new Error(`Player with email ${email} not found`);
         }
         return player;
     }
 
-    private create(createPlayerPayload: CreatePlayerDto) {
-        const { name, phone, email } = createPlayerPayload;
-        const player: Player = {
-            _id: uuid(),
-            name,
-            phone,
-            email,
-            ranking: 'A',
-            rankingPosition: 1,
-            profilePhotoUrl: 'https://example.com/default-profile-photo.jpg'
-        }
-        this.logger.log('INFO', `Creating player: ${JSON.stringify(player)}`);
-        this.players.push(player);
+    private async create(createPlayerPayload: CreatePlayerDto): Promise<Player> {
+        const createdPlayer = new this.playerModel(createPlayerPayload);
+        return await createdPlayer.save();
     }
 
-    private update(existingPlayer: Player, updatePlayerPayload: CreatePlayerDto): void {
-        const { name } = updatePlayerPayload;
-        existingPlayer.name = name;
-        this.logger.log('INFO', `Updating player: ${JSON.stringify(existingPlayer)}`);
+    private async update(updatePlayerPayload: CreatePlayerDto): Promise<Player> {
+        this.logger.log('INFO', `Updating player: ${JSON.stringify(updatePlayerPayload)}`);
+        return await this.playerModel.findOneAndUpdate({ email: updatePlayerPayload.email }, { $set: updatePlayerPayload }).exec();
     }
 
     @Delete()
-    async deletePlayer(email: string): Promise<void>{
-        const existingPlayer: Player = await this.players.find(p => p.email === email);
-        this.logger.log('INFO', `Deleting player: ${JSON.stringify(existingPlayer)}`);
-        this.players = this.players.filter(p => p.email !== existingPlayer.email)
+    async deletePlayer(email: string): Promise<any> {
+        this.logger.log('INFO', `Deleting player: ${email}`);
+        return await this.playerModel.deleteOne({ email }).exec();
     }
 }
