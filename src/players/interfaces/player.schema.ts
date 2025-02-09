@@ -6,5 +6,5 @@ export const PlayerSchema = new mongoose.Schema({
     name: { type: String, required: true },
     ranking: { type: String, default: 'A' },
     rankingPosition: { type: Number, default: 1 },
-    profilePhotoUrl: { type: String, default: 'https://example.com/default-profile-photo.jpg' }
+    profilePhotoUrl: { type: String, default: null }
 }, { timestamps: true, collection: 'players' });
